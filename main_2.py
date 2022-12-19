@@ -8,12 +8,13 @@ import sqlite3
 import json
 import plotly.graph_objects as go
 
+
 def plot_ticker(ticker_name):
     error_code = 0
     try:
         conn = sqlite3.connect("ticker_data.db")
     except:
-        error_handling
+        error_code = 4
 
     if error_code == 0:
         data_to_plot = pd.read_sql("SELECT Date, Open, High, Low, Close FROM " + ticker_name, conn)
@@ -24,25 +25,27 @@ def plot_ticker(ticker_name):
                                              close=data_to_plot['Close'])])
         fig.show()
 
- 
+    return error_code
+
+
 def save_ticker_data(ticker_name, hist):
     conn = None
     error_code = 0
-    
+
     try:
         conn = sqlite3.connect("ticker_data.db")
     except:
         error_code = 4
-    
-    if error_code = 0:
+
+    if error_code == 0:
         hist.to_sql(ticker_name, conn, if_exists="replace")
-        
+
     return error_code
 
 
 def save_ticker_metadata(ticker, st_date, fn_date):
     error_code = 0
-    
+
     with open("metadata.json", 'r+') as metadata_file:
         metadata = json.load(metadata_file)
 
@@ -60,7 +63,7 @@ def save_ticker_metadata(ticker, st_date, fn_date):
 
         metadata_file.seek(0)
         json.dump(metadata, metadata_file, indent=4)
-        
+
     return error_code
 
 
@@ -87,7 +90,7 @@ def get_ticker_data(ticker, st_date, fn_date):
         period = end - start
     except:
         error_code = 2
-    
+
     if error_code == 0:
         if start >= end or end > datetime.now():
             error_code = 2
@@ -108,6 +111,7 @@ def get_ticker_data(ticker, st_date, fn_date):
             error_code = save_ticker_metadata(ticker, st_date, fn_date)
 
     return error_code
+
 
 exit_command = False
 
