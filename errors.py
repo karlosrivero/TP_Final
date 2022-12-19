@@ -6,4 +6,4 @@ def send_message(error_code):
    elif error_code == 3:
       print("The range requested exceeds the capabilities of this software, please enter a shorter date range.")
    elif error_code == 4:
-      print("Database cannot be accessed. Please make sure the file exists and is not being used by other processes, then try again.")
+      print("Upload failed becuse database could not be accessed. Please make sure the file exists and is not being used by other processes, then try again.")
