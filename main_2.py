@@ -1,7 +1,7 @@
 from datetime import datetime
 from datetime import timedelta
-from errores import error_handling
 
+import errors as errors
 import pandas as pd
 import yfinance as yf
 import sqlite3
@@ -27,15 +27,22 @@ def plot_ticker(ticker_name):
  
 def save_ticker_data(ticker_name, hist):
     conn = None
+    error_code = 0
+    
     try:
         conn = sqlite3.connect("ticker_data.db")
     except:
-        print("Database is in use (I guess?), please close the file and try again.")
-
-    hist.to_sql(ticker_name, conn, if_exists="replace")
+        error_code = 4
+    
+    if error_code = 0:
+        hist.to_sql(ticker_name, conn, if_exists="replace")
+        
+    return error_code
 
 
 def save_ticker_metadata(ticker, st_date, fn_date):
+    error_code = 0
+    
     with open("metadata.json", 'r+') as metadata_file:
         metadata = json.load(metadata_file)
 
@@ -53,6 +60,8 @@ def save_ticker_metadata(ticker, st_date, fn_date):
 
         metadata_file.seek(0)
         json.dump(metadata, metadata_file, indent=4)
+        
+    return error_code
 
 
 def check_ticker_data(ticker):
@@ -77,8 +86,28 @@ def get_ticker_data(ticker, st_date, fn_date):
         end = datetime.strptime(fn_date, date_format)
         period = end - start
     except:
-        error_handling
+        error_code = 2
+    
+    if error_code == 0:
+        if start >= end or end > datetime.now():
+            error_code = 2
+        elif period > max_years:
+            error_code = 3
+        else:
+            print("Fetching data...")
+            api_data = yf.Ticker(ticker)
+            ticker_data = api_data.history(start=st_date, end=fn_date, debug=False)
+            if len(ticker_data) == 0:
+                error_code = 1
 
+    if error_code == 0:
+        print("Updating database...")
+
+        error_code = save_ticker_data(ticker, ticker_data)
+        if error_code == 0:
+            error_code = save_ticker_metadata(ticker, st_date, fn_date)
+
+    return error_code
 
 exit_command = False
 
@@ -91,12 +120,7 @@ while not exit_command:
         fn_date = input("Enter final date (YYYY-MM-DD): ")
 
         get_error_code = get_ticker_data(ticker, st_date, fn_date)
-        if get_error_code == 1:
-            print("Ticker is invalid, please verify and enter again.")
-        elif get_error_code == 2:
-            print("Dates are invalid, please verify and enter again.")
-        elif get_error_code == 3:
-            print("The range requested exceeds the capabilities of this software, please enter a shorter date range.")
+        errors.send_message(get_error_code)
 
     elif user_command == 'check':
         ticker = input("Enter ticker: ").upper()
